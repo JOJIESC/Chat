@@ -1,5 +1,8 @@
+// MANAGE INPUTS AND OUTPUTS ERRORS
 import java.io.IOException;
+// CREATE A SERVER SOCKET
 import java.net.ServerSocket;
+// CONNECT SERVER - CLIENT
 import java.net.Socket;
 
 public class Server {
