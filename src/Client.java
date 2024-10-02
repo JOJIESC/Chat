@@ -1,3 +1,4 @@
+import javax.swing.*;
 import java.io.*;
 import java.net.Socket;
 import java.util.Scanner;
@@ -17,26 +18,28 @@ public class Client {
             this.username = username;
         }catch(IOException e){
             closeEverything(socket, bufferedReader, bufferedWriter);
+            e.printStackTrace();
         }
     }
 
-    public void sendMessage() {
-        try{
-            bufferedWriter.write(username);
-            bufferedWriter.newLine();
-            bufferedWriter.flush();
-
-            Scanner scanner = new Scanner(System.in);
-            while(socket.isConnected()){
-                String messageToSend = scanner.nextLine();
-                bufferedWriter.write(username + ": " + messageToSend);
+    public void sendMessage(String message) {
+        try {
+            if (socket != null && !socket.isClosed()) {
+                bufferedWriter.write(message);
                 bufferedWriter.newLine();
                 bufferedWriter.flush();
+                SwingUtilities.invokeLater(() -> {
+                    ChatGUI.getChatArea().append("Me: " + message + "\n");
+                });
+            } else {
+                System.out.println("Socket is not connected or is closed.");
             }
         } catch (IOException e) {
-            closeEverything(socket, bufferedReader, bufferedWriter);
+            e.printStackTrace(); // Imprimir el error en la consola para depuración
+            closeEverything(socket, bufferedReader, bufferedWriter); // Cerrar recursos en caso de error
         }
     }
+
 
     public void listenForMessage(){
         new Thread(new Runnable() {
@@ -47,8 +50,12 @@ public class Client {
                  while(socket.isConnected()){
                      try{
                          msgFromGroupchat = bufferedReader.readLine();
-                         System.out.println(msgFromGroupchat);
+                         String finalMsgFromGroupchat = msgFromGroupchat;
+                         SwingUtilities.invokeLater(() -> {
+                             ChatGUI.getChatArea().append(username+": " + finalMsgFromGroupchat + "\n");
+                         });
                      }catch (IOException e){
+                         e.printStackTrace();
                          closeEverything(socket, bufferedReader, bufferedWriter);
                      }
                  }
@@ -72,13 +79,4 @@ public class Client {
         }
     }
 
-    public static void main(String[] args) throws IOException {
-        Scanner scanner = new Scanner(System.in);
-        System.out.println("Enter your username for the chat: ");
-        String username = scanner.nextLine();
-        Socket socket = new Socket("localhost", 1234);
-        Client client = new Client(socket,username);
-        client.listenForMessage();
-        client.sendMessage();
-    }
 }

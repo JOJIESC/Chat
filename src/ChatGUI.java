@@ -8,11 +8,13 @@ public class ChatGUI extends JFrame {
 
     private JList<String> userList;
     private DefaultListModel<String> listModel;
-    private JTextArea chatArea;
+    private static JTextArea chatArea;
     private JTextArea msgInputArea;
     private JButton sendButton;
+    private Client client;
 
-    public ChatGUI() {
+    public ChatGUI(Client client) {
+        this.client = client;
         // Configuración del JFrame principal
         setTitle("Chat Application");
         setSize(800, 600);
@@ -64,6 +66,18 @@ public class ChatGUI extends JFrame {
                 }
             }
         });
+
+        sendButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                String message = msgInputArea.getText().trim();
+                if (!message.isEmpty()) {
+                    client.sendMessage(message);
+                    msgInputArea.setText(""); // Limpiar el área de texto después de enviar
+                }
+            }
+        });
+
 
         // Añadir usuarios de prueba a la lista
         populateUserList();
@@ -148,7 +162,8 @@ public class ChatGUI extends JFrame {
         listModel.addElement("User 4");
     }
 
-    public static void main(String[] args) {
-        SwingUtilities.invokeLater(ChatGUI::new);
+    public static JTextArea getChatArea() {
+        return chatArea;
     }
+
 }
