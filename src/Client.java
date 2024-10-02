@@ -10,12 +10,12 @@ public class Client {
     private BufferedWriter bufferedWriter;
     private String username;
 
-    public Client(Socket socket,String username) {
+    public Client(Socket socket) {
         try{
             this.socket = socket;
             this.bufferedReader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             this.bufferedWriter = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
-            this.username = username;
+            this.username = JOptionPane.showInputDialog("Ingrese un usuario");
         }catch(IOException e){
             closeEverything(socket, bufferedReader, bufferedWriter);
             e.printStackTrace();
@@ -25,7 +25,7 @@ public class Client {
     public void sendMessage(String message) {
         try {
             if (socket != null && !socket.isClosed()) {
-                bufferedWriter.write(message);
+                bufferedWriter.write(username + ": " + message);
                 bufferedWriter.newLine();
                 bufferedWriter.flush();
                 SwingUtilities.invokeLater(() -> {
@@ -50,9 +50,9 @@ public class Client {
                  while(socket.isConnected()){
                      try{
                          msgFromGroupchat = bufferedReader.readLine();
-                         String finalMsgFromGroupchat = msgFromGroupchat;
+                         String finalMsgFromGroupchat1 = msgFromGroupchat;
                          SwingUtilities.invokeLater(() -> {
-                             ChatGUI.getChatArea().append(username+": " + finalMsgFromGroupchat + "\n");
+                             ChatGUI.getChatArea().append(finalMsgFromGroupchat1 + "\n");
                          });
                      }catch (IOException e){
                          e.printStackTrace();
@@ -78,5 +78,6 @@ public class Client {
             e.printStackTrace();
         }
     }
+
 
 }

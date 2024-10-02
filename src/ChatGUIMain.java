@@ -7,12 +7,9 @@ public class ChatGUIMain {
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
             try {
-                // Pedir al usuario que ingrese su nombre de usuario
-                String username = JOptionPane.showInputDialog("Enter your username for the chat:");
-
                 // Establecer conexión con el servidor
                 Socket socket = new Socket("localhost", 1234);
-                Client client = new Client(socket, username);  // Crear cliente con socket y username
+                Client client = new Client(socket);  // Crear cliente con socket y username
 
                 // Crear la interfaz gráfica y pasarle el cliente
                 ChatGUI gui = new ChatGUI(client);
