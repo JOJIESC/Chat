@@ -7,7 +7,7 @@ import java.io.File;
 public class ChatGUI extends JFrame {
 
     private JList<String> userList;
-    private DefaultListModel<String> listModel;
+    private static DefaultListModel<String> listModel;
     private static JTextArea chatArea;
     private JTextArea msgInputArea;
     private JButton sendButton;
@@ -30,7 +30,7 @@ public class ChatGUI extends JFrame {
         JScrollPane userScrollPane = new JScrollPane(userList);
         userScrollPane.setPreferredSize(new Dimension(200, 0));
         JPanel leftPanel = new JPanel(new BorderLayout());
-        leftPanel.setBorder(BorderFactory.createTitledBorder("Online Users"));
+        leftPanel.setBorder(BorderFactory.createTitledBorder("Usuarios en línea"));
         leftPanel.add(userScrollPane, BorderLayout.CENTER);
 
         // Panel derecho: Chat grupal
@@ -42,8 +42,8 @@ public class ChatGUI extends JFrame {
         // Panel inferior: Enviar mensaje
         msgInputArea = new JTextArea(3, 50);
         JScrollPane msgInputScrollPane = new JScrollPane(msgInputArea);
-        msgInputArea.setBorder(BorderFactory.createTitledBorder("Message"));
-        sendButton = new JButton("Send");
+        msgInputArea.setBorder(BorderFactory.createTitledBorder("Mensaje"));
+        sendButton = new JButton("Enviar");
 
         JPanel bottomPanel = new JPanel();
         bottomPanel.setLayout(new BorderLayout());
@@ -67,6 +67,7 @@ public class ChatGUI extends JFrame {
             }
         });
 
+        // Evento de botón de enviar mensaje
         sendButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -78,16 +79,12 @@ public class ChatGUI extends JFrame {
             }
         });
 
-
-        // Añadir usuarios de prueba a la lista
-        populateUserList();
-
         setVisible(true);
     }
 
     // Método para abrir una nueva ventana de chat privado
     private void openPrivateChatWindow(String username) {
-        JFrame privateChatFrame = new JFrame("Private Chat with " + username);
+        JFrame privateChatFrame = new JFrame("Chat privado con " + username);
         privateChatFrame.setSize(400, 400);
         privateChatFrame.setLayout(new BorderLayout());
 
@@ -98,10 +95,10 @@ public class ChatGUI extends JFrame {
 
         JTextArea privateMsgInputArea = new JTextArea(2, 30);
         JScrollPane privateMsgScrollPane = new JScrollPane(privateMsgInputArea);
-        JButton privateSendButton = new JButton("Send");
+        JButton privateSendButton = new JButton("Enviar");
 
         // Botón para enviar archivos
-        JButton fileButton = new JButton("Send File");
+        JButton fileButton = new JButton("Enviar archivo");
 
         // Crear panel con GridBagLayout para tener los botones organizados
         JPanel privateBottomPanel = new JPanel(new GridBagLayout());
@@ -142,10 +139,9 @@ public class ChatGUI extends JFrame {
                     long fileSizeInMB = selectedFile.length() / (1024 * 1024);
 
                     if (fileSizeInMB <= 50) {
-                        // Aquí puedes agregar la lógica para enviar el archivo
-                        privateChatArea.append("Sending file: " + selectedFile.getName() + "\n");
+                        privateChatArea.append("Enviando archivo: " + selectedFile.getName() + "\n");
                     } else {
-                        JOptionPane.showMessageDialog(privateChatFrame, "File size exceeds 50MB limit.", "Error", JOptionPane.ERROR_MESSAGE);
+                        JOptionPane.showMessageDialog(privateChatFrame, "El archivo excede el límite de 50 MB.", "Error", JOptionPane.ERROR_MESSAGE);
                     }
                 }
             }
@@ -154,16 +150,13 @@ public class ChatGUI extends JFrame {
         privateChatFrame.setVisible(true);
     }
 
-    // Método para agregar algunos usuarios de prueba a la lista
-    private void populateUserList() {
-        listModel.addElement("User 1");
-        listModel.addElement("User 2");
-        listModel.addElement("User 3");
-        listModel.addElement("User 4");
-    }
-
+    // Método para obtener el área de chat
     public static JTextArea getChatArea() {
         return chatArea;
     }
 
+    // Método para obtener el modelo de lista de usuarios
+    public static DefaultListModel<String> getUserListModel() {
+        return listModel;
+    }
 }

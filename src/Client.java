@@ -1,7 +1,6 @@
 import javax.swing.*;
 import java.io.*;
 import java.net.Socket;
-import java.util.Scanner;
 
 public class Client {
 
@@ -10,13 +9,17 @@ public class Client {
     private BufferedWriter bufferedWriter;
     private String username;
 
-    public Client(Socket socket) {
-        try{
+    public Client(Socket socket, String username) {
+        try {
             this.socket = socket;
             this.bufferedReader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             this.bufferedWriter = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
-            this.username = JOptionPane.showInputDialog("Ingrese un usuario");
-        }catch(IOException e){
+            this.username = username;
+            // Enviar el nombre de usuario al servidor
+            bufferedWriter.write(username);
+            bufferedWriter.newLine();
+            bufferedWriter.flush();
+        } catch (IOException e) {
             closeEverything(socket, bufferedReader, bufferedWriter);
             e.printStackTrace();
         }
@@ -29,10 +32,11 @@ public class Client {
                 bufferedWriter.newLine();
                 bufferedWriter.flush();
                 SwingUtilities.invokeLater(() -> {
+                    // Mostrar el mensaje enviado por el propio cliente en la interfaz
                     ChatGUI.getChatArea().append("Me: " + message + "\n");
                 });
             } else {
-                System.out.println("Socket is not connected or is closed.");
+                System.out.println("Socket no está conectado o está cerrado.");
             }
         } catch (IOException e) {
             e.printStackTrace(); // Imprimir el error en la consola para depuración
@@ -40,44 +44,63 @@ public class Client {
         }
     }
 
+    // Método para recibir mensajes del servidor, incluyendo la lista de usuarios conectados
+    public void listenForMessage() {
+        new Thread(() -> {
+            String msgFromServer;
 
-    public void listenForMessage(){
-        new Thread(new Runnable() {
-             @Override
-            public void run() {
-                String msgFromGroupchat;
+            while (socket.isConnected()) {
+                try {
+                    msgFromServer = bufferedReader.readLine();
 
-                 while(socket.isConnected()){
-                     try{
-                         msgFromGroupchat = bufferedReader.readLine();
-                         String finalMsgFromGroupchat1 = msgFromGroupchat;
-                         SwingUtilities.invokeLater(() -> {
-                             ChatGUI.getChatArea().append(finalMsgFromGroupchat1 + "\n");
-                         });
-                     }catch (IOException e){
-                         e.printStackTrace();
-                         closeEverything(socket, bufferedReader, bufferedWriter);
-                     }
-                 }
-             }
+                    if (msgFromServer.startsWith("USERLIST")) {
+                        // Mensaje especial para actualizar la lista de usuarios conectados
+                        String[] userList = msgFromServer.replace("USERLIST ", "").split(",");
+                        updateUserList(userList);
+                    } else {
+                        // Evitar mostrar el mensaje si es del mismo usuario (ya se mostró al enviarlo)
+                        if (!msgFromServer.startsWith(username + ": ")) {
+                            String finalMsgFromServer = msgFromServer;
+                            SwingUtilities.invokeLater(() -> {
+                                ChatGUI.getChatArea().append(finalMsgFromServer + "\n");
+                            });
+                        }
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    closeEverything(socket, bufferedReader, bufferedWriter);
+                    break;
+                }
+            }
         }).start();
     }
 
+    // Actualiza la lista de usuarios conectados en la GUI
+    private void updateUserList(String[] users) {
+        SwingUtilities.invokeLater(() -> {
+            ChatGUI.getUserListModel().clear(); // Limpia la lista anterior
+            for (String user : users) {
+                if (!user.isEmpty()) {
+                    ChatGUI.getUserListModel().addElement(user);
+                }
+            }
+        });
+    }
+
+    // Cierra todos los recursos y muestra un mensaje si se pierde la conexión
     public void closeEverything(Socket socket, BufferedReader bufferedReader, BufferedWriter bufferedWriter) {
-        try{
-            if(bufferedReader != null){
+        try {
+            if (bufferedReader != null) {
                 bufferedReader.close();
             }
-            if(bufferedWriter != null){
+            if (bufferedWriter != null) {
                 bufferedWriter.close();
             }
-            if(socket != null){
+            if (socket != null) {
                 socket.close();
             }
-        }catch (IOException e){
+        } catch (IOException e) {
             e.printStackTrace();
         }
     }
-
-
 }

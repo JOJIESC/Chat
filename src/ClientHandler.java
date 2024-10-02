@@ -1,95 +1,90 @@
-//MANAGE INPUTS AND OUTPUTS
 import java.io.*;
-// CONNECT CLIENT AND SERVER
 import java.net.Socket;
-// LIST OF CLIENTS CONNECTED
 import java.util.ArrayList;
 
-/*THIS CLASS IMPLEMENTS RUNNABLE TO BE ABLE TO RUN
-* THE CLASS ON A DIFFERENT THREAD*/
 public class ClientHandler implements Runnable {
 
-    // LIST TO TRACK ALL THE INSTANCES OF CLIENT HANDLER AND SEND MESSAGES TO ALL THE CLIENTS
+    // Lista para rastrear todas las instancias de ClientHandler y enviar mensajes a todos los clientes
     public static ArrayList<ClientHandler> clientHandlers = new ArrayList<>();
     private Socket socket;
-    // READ CLIENT MESSAGES
     private BufferedReader bufferedReader;
-    // SEND MESSAGES TO CLIENT
     private BufferedWriter bufferedWriter;
-    // SAVE THE CLIENT USERNAME
     private String clientUsername;
+    private Server server;
 
-    // CONSTRUCTOR
-    public ClientHandler(Socket socket) {
-        try{
+    // Constructor
+    public ClientHandler(Socket socket, Server server) {
+        try {
             this.socket = socket;
-            // INITIALIZE THE BUFFERS TO READ AND WRITE THROUGH THE SOCKET
+            this.server = server;
+            // Inicializar los buffers para leer y escribir a través del socket
             this.bufferedWriter = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
             this.bufferedReader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-            // SAVE THE USERNAME BY INPUT CONSOLE
+            // Leer el nombre de usuario enviado por el cliente
             this.clientUsername = bufferedReader.readLine();
-            // ADD THE ACTUAL CLIENT TO THE LIST
+            // Agregar al cliente actual a la lista
             clientHandlers.add(this);
-            // NOTIFY ALL CONNECTED CLIENTS
-            broadcastMessage("Server: " + clientUsername + " has entered the chat");
-        }catch (Exception e){
+            // Notificar a todos los clientes que un nuevo usuario ha entrado al chat
+            server.broadcastMessage("Server: " + clientUsername + " ha entrado al chat");
+            // Enviar la lista de usuarios conectados
+            server.sendUserList();
+        } catch (Exception e) {
             closeEverything(socket, bufferedReader, bufferedWriter);
         }
     }
 
-    // THIS METHOD HAVE THE LOGIC FOR EACH THREAD EXECUTED
+    // Lógica del hilo que ejecuta este ClientHandler
     @Override
     public void run() {
         String messageFromClient;
 
-        while(socket.isConnected()){
-            try{
+        while (socket.isConnected()) {
+            try {
                 messageFromClient = bufferedReader.readLine();
-                broadcastMessage(messageFromClient);
-            }catch (IOException e){
-                closeEverything(socket,bufferedReader, bufferedWriter);
+                if (messageFromClient != null) {
+                    server.broadcastMessage(messageFromClient);
+                }
+            } catch (IOException e) {
+                closeEverything(socket, bufferedReader, bufferedWriter);
                 break;
             }
         }
     }
 
-    // THIS METHOD SEND MESSAGES TO ALL CLIENTS ON THE "CLIENT HANDLERS" LIST
-    // EXCEPT FOR THE SENDER
-    public void broadcastMessage(String messageToSend){
-        for(ClientHandler clientHandler : clientHandlers){
-            try{
-                if(!clientHandler.clientUsername.equals(clientUsername)){
-                    clientHandler.bufferedWriter.write(messageToSend);
-                    clientHandler.bufferedWriter.newLine();
-                    clientHandler.bufferedWriter.flush();
-                }
-            }catch (IOException e){
-                closeEverything(socket, bufferedReader,bufferedWriter);
-            }
-        }
+    // Método para enviar un mensaje a este cliente
+    public void sendMessage(String messageToSend) throws IOException {
+        bufferedWriter.write(messageToSend);
+        bufferedWriter.newLine();
+        bufferedWriter.flush();
     }
 
-    // THIS METHOD DELETE THE ACTUAL CLIENT FROM THE "CLIENT HANDLER LIST"
-    public void removeClientHandler(){
+    // Método para eliminar el cliente de la lista y notificar a los demás
+    public void removeClientHandler() {
         clientHandlers.remove(this);
-        broadcastMessage("Server: " + clientUsername + " has left the chat");
+        server.broadcastMessage("Server: " + clientUsername + " ha salido del chat");
+        server.sendUserList(); // Actualizar la lista de usuarios conectados
     }
 
-    // THIS METHOD CLOSE EVERY RESOURCE (CLIENT SOCKET, BUFFERS AND THE CLIENT FROM THE LIST)
-    public void closeEverything(Socket socket, BufferedReader bufferedReader, BufferedWriter bufferedWriter){
-        removeClientHandler();
-        try{
-            if(bufferedReader != null){
+    // Método para cerrar todos los recursos y eliminar al cliente de la lista
+    public void closeEverything(Socket socket, BufferedReader bufferedReader, BufferedWriter bufferedWriter) {
+        removeClientHandler();  // Eliminar al cliente de la lista
+        try {
+            if (bufferedReader != null) {
                 bufferedReader.close();
             }
-            if(bufferedWriter != null){
+            if (bufferedWriter != null) {
                 bufferedWriter.close();
             }
-            if(socket != null){
+            if (socket != null) {
                 socket.close();
             }
-        }catch (IOException e){
+        } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    // Método para obtener el nombre de usuario del cliente
+    public String getClientUsername() {
+        return clientUsername;
     }
 }

@@ -1,55 +1,88 @@
-// MANAGE INPUTS AND OUTPUTS ERRORS
 import java.io.IOException;
-// CREATE A SERVER SOCKET
 import java.net.ServerSocket;
-// CONNECT SERVER - CLIENT
 import java.net.Socket;
+import java.util.ArrayList;
 
 public class Server {
-    // Variable to access serverSocket
+    // Variable para manejar el ServerSocket
     private ServerSocket serverSocket;
+    private ArrayList<ClientHandler> clientHandlers;
 
-    // Constructor to start the server
+    // Constructor para iniciar el servidor
     public Server(ServerSocket serverSocket) {
         this.serverSocket = serverSocket;
+        this.clientHandlers = new ArrayList<>();
     }
 
-    // This method is in charge to start the server and manage client connections
-    public void startServer(){
-        try{
-            //WHILE SERVER IS OPEN, ACCEPT CONNECTIONS
-            while(!serverSocket.isClosed()){
+    // Método para iniciar el servidor y gestionar conexiones
+    public void startServer() {
+        try {
+            // Mientras el servidor esté abierto, acepta conexiones
+            while (!serverSocket.isClosed()) {
                 Socket socket = serverSocket.accept();
-                System.out.println("New client connected");
-                // Once a connection is established, we create an instance of clientHandler
-                // is in charge to manage the client communication
-                ClientHandler clientHandler = new ClientHandler(socket);
-                // Start a thread to manage each client independently
+                System.out.println("Nuevo cliente conectado");
+
+                // Crear una instancia de ClientHandler para manejar la comunicación con el cliente
+                ClientHandler clientHandler = new ClientHandler(socket, this);
+                // Agregar el cliente a la lista
+                clientHandlers.add(clientHandler);
+                // Enviar la lista de usuarios conectados a todos los clientes
+                sendUserList();
+
+                // Iniciar un hilo para gestionar el cliente de manera independiente
                 Thread thread = new Thread(clientHandler);
                 thread.start();
             }
         } catch (IOException e) {
-            System.out.println("Error connecting server" + e.getMessage());
+            System.out.println("Error conectando el servidor: " + e.getMessage());
         }
     }
 
-    // METHOD TO CLOSE SERVER SOCKET
-    public void closeServerSocket(){
-        try{
-            if(serverSocket != null){
+    // Método para cerrar el ServerSocket
+    public void closeServerSocket() {
+        try {
+            if (serverSocket != null) {
                 serverSocket.close();
             }
-        }catch(IOException e){
-            e.printStackTrace();
+        } catch (IOException e) {
+            System.out.println("Error cerrando el servidor: " + e.getMessage());
         }
+    }
+
+    // Método para enviar la lista de usuarios conectados a todos los clientes
+    public void sendUserList() {
+        StringBuilder userList = new StringBuilder("USERLIST ");
+        for (ClientHandler clientHandler : clientHandlers) {
+            userList.append(clientHandler.getClientUsername()).append(",");
+        }
+
+        // Enviar la lista a todos los clientes
+        broadcastMessage(userList.toString());
+    }
+
+    // Método para enviar mensajes a todos los clientes conectados
+    public void broadcastMessage(String messageToSend) {
+        for (ClientHandler clientHandler : clientHandlers) {
+            try {
+                clientHandler.sendMessage(messageToSend);
+            } catch (IOException e) {
+                System.out.println("Error enviando mensaje a " + clientHandler.getClientUsername() + ": " + e.getMessage());
+            }
+        }
+    }
+
+    // Método para eliminar un cliente de la lista y notificar a los demás
+    public void removeClientHandler(ClientHandler clientHandler) {
+        clientHandlers.remove(clientHandler);
+        System.out.println(clientHandler.getClientUsername() + " ha salido del chat.");
+        sendUserList(); // Actualiza la lista de usuarios conectados
     }
 
     public static void main(String[] args) throws IOException {
-        // CREATE A NEW INSTANCE OF SERVER SOCKET ON PORT 1234
+        // Crear una instancia de ServerSocket en el puerto 1234
         ServerSocket serverSocket = new ServerSocket(1234);
-        // CREATE A NEW INSTANCE OF SERVER CLASS AND START TO ACCEPT NEW CONNECTIONS
+        // Crear una instancia de la clase Server y comenzar a aceptar conexiones
         Server server = new Server(serverSocket);
         server.startServer();
     }
 }
-
